@@ -5,19 +5,19 @@ on:
   # This number should correspond to the IGNORE_RUNS_OLDER_THAN value below.
   # When setting up for the first time, use "on: push" instead of "on: schedule"
   # and set IGNORE_RUNS_OLDER_THAN to a very high number until it runs once.
-  push:
+  # push:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/2 * * * *'
 
 jobs:
   pr_updater:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Wait for artifact to be created
-        uses: jakejarvis/wait-action@master
-        with:
-          time: '20s'
+      # - name: Wait for artifact to be created
+      #   uses: jakejarvis/wait-action@master
+      #   with:
+      #     time: '20s'
       - name: Fetch artifact
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
