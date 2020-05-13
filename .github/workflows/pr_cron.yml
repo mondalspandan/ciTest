@@ -271,10 +271,12 @@ jobs:
 
           echo "STAGE", $STAGE
           echo "MERGED", $MERGED
+          echo "::set-env name=RELEASED::${LABEL_RELEASED}"
+          echo "RELEASED", $RELEASED
+
+          echo "LABEL_RELEASED", $LABEL_RELEASED
           echo "LABEL_STAGED", $LABEL_STAGED
 
-          echo "::set-env name=LABEL_RELEASED::${LABEL_RELEASED}"
-          echo "LABEL_RELEASED", $LABEL_RELEASED
 
       - name: Dump env 
         env:
@@ -401,7 +403,7 @@ jobs:
                         -H "Content-Type: application/json" )"
 
       - name: Art
-        if: env.MERGED
+        if: env.RELEASED
         run: |
           crl() {
             curl --silent --show-error --location --retry 1 "${@:2}" \
