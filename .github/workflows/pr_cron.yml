@@ -255,6 +255,13 @@ jobs:
             echo "Release has already been staged"
           fi
 
+          if [ "$LAB" == : ]; then
+            echo "Release will be staged"
+            echo "::set-env name=STAGE::true"
+          else
+            echo "Release has already been staged"
+          fi
+
           echo "::set-env name=MERGED::$(echo ${MERGED_STAT})" 
           echo "::set-env name=LABELED::$(echo ${LAB})" 
           echo "MERGED", $MERGED
@@ -315,7 +322,7 @@ jobs:
       - name: Comment on issue
         # if: >-
         #   ${{ env.STAGE }} == "true"
-        if: ${{ "$(STAGE)" == "true" }}
+        if: env.STAGE
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
@@ -349,7 +356,7 @@ jobs:
       - name: Push changes
         # if: >-
         #   (${{ env.MERGE }} == "true")
-        if: ${{ "$(MERGED)" == "true" }}
+        if: env.MERGED
         # uses: ad-m/github-push-action@v0.5.0
         # with:
         #   branch: master
@@ -361,7 +368,7 @@ jobs:
       - name: Remove artifact
         # if: >-
         #   ${{ env.MERGED }} == "true" 
-        if: ${{ "$(MERGED)" == "true" }}
+        if: env.MERGED
         run: |
           crl() {
             curl --silent --show-error --location --retry 1 "${@:2}" \
