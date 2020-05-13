@@ -418,6 +418,7 @@ jobs:
           DEL_ART="$(auth_crl "$GITHUB_API/actions/artifacts/$ART_ID" \
                 -X DELETE \
                 -H "Content-Type: application/json" )" 
+          echo $DEL_ART
 
       # - name: Comment that something failed
       #   if: failure()
