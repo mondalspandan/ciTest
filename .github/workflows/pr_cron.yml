@@ -272,6 +272,8 @@ jobs:
           echo "STAGE", $STAGE
           echo "MERGED", $MERGED
           echo "LABEL_STAGED", $LABEL_STAGED
+
+          echo "::set-env name=LABEL_RELEASED::${LABEL_RELEASED}"
           echo "LABEL_RELEASED", $LABEL_RELEASED
 
       - name: Dump env 
@@ -397,6 +399,24 @@ jobs:
           DEL_STAGED="$(auth_crl "$GITHUB_API/issues/$PR_NUMBER/labels/GHA/STAGED" \
                         -X DELETE \
                         -H "Content-Type: application/json" )"
+
+      - name: Art
+        if: env.MERGED
+        run: |
+          crl() {
+            curl --silent --show-error --location --retry 1 "${@:2}" \
+              -H "Accept: application/vnd.github.antiope-preview+json, application/vnd.github.v3+json" \
+             "$1"
+          }
+          auth_crl() {
+            crl "$1" -H "authorization: Bearer $GITHUB_TOKEN" "${@:2}"
+          }
+
+          echo "Removing triggering artifact id: $ART_ID"
+          DEL_ART="$(auth_crl "$GITHUB_API/actions/artifacts/$ART_ID" \
+                -X DELETE \
+                -H "Content-Type: application/json" )" 
+
       # - name: Comment that something failed
       #   if: failure()
       #   uses: actions/github-script@0.3.0
