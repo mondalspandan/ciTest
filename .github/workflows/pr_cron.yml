@@ -7,17 +7,17 @@ on:
   # and set IGNORE_RUNS_OLDER_THAN to a very high number until it runs once.
   push:
   schedule:
-    - cron: '*/2 * * * *'
+    - cron: '*/5 * * * *'
 
 jobs:
   pr_updater:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Wait for artifact to be created
-        uses: jakejarvis/wait-action@master
-        with:
-          time: '20s'
+      # - name: Wait for artifact to be created
+      #   uses: jakejarvis/wait-action@master
+      #   with:
+      #     time: '20s'
       - name: Fetch artifact
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
@@ -238,10 +238,6 @@ jobs:
             echo "::set-env name=ART_ID::$(echo ${ART_ID})" 
             echo "::set-env name=GITHUB_API::$(echo ${GITHUB_API})" 
 
-            # echo "Removing triggering artifact id: $ART_ID"
-            # DEL="$(auth_crl "$GITHUB_API/actions/artifacts/$ART_ID" \
-            #       -X DELETE \
-            #       -H "Content-Type: application/json" )" 
           done
       - name: Check what to run
         run: |
@@ -249,7 +245,7 @@ jobs:
           export PR_NUMBER=$(echo $JS | jq -r .PR_NUMBER)
           LAB=$(curl -f "$GITHUB_API/issues/$PR_NUMBER/labels" \
                 -H "Content-Type: application/json" | jq '.[] | select(.name=="GHA/STAGED")' | jq -r '.name' )
-          MERGED=$(curl -f "$GITHUB_API/pulls/$PR_NUMBER" \
+          MERGED_STAT=$(curl -f "$GITHUB_API/pulls/$PR_NUMBER" \
                    -H "Content-Type: application/json" | jq '.merged')
 
           if [ -z "$LAB" ]; then
@@ -258,7 +254,10 @@ jobs:
           else
             echo "Release has already been staged"
           fi
-          echo $MERGED, $LAB, $STAGE
+
+          echo "::set-env name=MERGED::$(echo ${MERGED_STAT})" 
+          echo "MERGE", $MERGED
+          echo "STAGE", $STAGE
 
       - name: Checkout repository
         uses: actions/checkout@v1.2.0
@@ -349,11 +348,20 @@ jobs:
         uses: ad-m/github-push-action@v0.5.0
         with:
           branch: master
-          github_token: ${{ secrets.GITHUB_PAT }}
-      - name: Push changes
+          github_token: ${{ secrets.PAT_TEST }}
+      - name: Remove artifact
         if: >-
           ${{ env.MERGED }} == "true" 
         run: |
+          crl() {
+            curl --silent --show-error --location --retry 1 "${@:2}" \
+              -H "Accept: application/vnd.github.antiope-preview+json, application/vnd.github.v3+json" \
+             "$1"
+          }
+          auth_crl() {
+            crl "$1" -H "authorization: Bearer $GITHUB_TOKEN" "${@:2}"
+          }
+
           echo "Removing triggering artifact id: $ART_ID"
           DEL="$(auth_crl "$GITHUB_API/actions/artifacts/$ART_ID" \
                 -X DELETE \
