@@ -255,14 +255,13 @@ jobs:
             echo "Release has already been staged"
           fi
 
-          if [ "$LAB" == : ]; then
-            echo "Release will be staged"
-            echo "::set-env name=STAGE::true"
+          if [ "$MERGED" == true ]; then
+            echo "PR has been merged"
+            echo "::set-env name=$MERGED::true"
           else
-            echo "Release has already been staged"
+            echo "PR has not been merged"
           fi
 
-          echo "::set-env name=MERGED::$(echo ${MERGED_STAT})" 
           echo "::set-env name=LABELED::$(echo ${LAB})" 
           echo "MERGED", $MERGED
           echo "LABELED", $LABELED
