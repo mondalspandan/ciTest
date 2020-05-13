@@ -267,7 +267,7 @@ jobs:
           echo "LABEL", $LABEL
 
           echo "ENV", env
-          echo "ENV2", ${{ env['BV_PART'] }}
+          echo "ENV2", ${{ env }}
 
 
       - name: Checkout repository
