@@ -286,12 +286,15 @@ jobs:
           echo "$GHA__ENV"
 
       - name: Checkout repository
+        if: env.ART_ID  # Trigger artifact exists
         uses: actions/checkout@v1.2.0
       - name: Set up git user
+        if: env.ART_ID  # Trigger artifact exists
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
       - name: Checkout master
+        if: env.ART_ID  # Trigger artifact exists
         run: git checkout master
       - name: Squash and merge PR#${{ env.PR_NUMBER }} to master
         if: env.STAGE
