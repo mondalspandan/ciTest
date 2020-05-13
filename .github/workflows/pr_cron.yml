@@ -253,6 +253,7 @@ jobs:
                    -H "Content-Type: application/json" | jq '.merged')
 
           if [ -z "$LABEL_RELEASED" ]; then
+            # If not labeled released, add bools to run workflow
             if [ -z "$LABEL_STAGED" ]; then
               echo "Release will be staged"
               echo "::set-env name=STAGE::true"
