@@ -384,6 +384,8 @@ jobs:
 
       - name: Clean up
         if: env.MERGED
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
           crl() {
             curl --silent --show-error --location --retry 1 "${@:2}" \
@@ -411,6 +413,8 @@ jobs:
 
       - name: Art
         if: env.RELEASED
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
           crl() {
             curl --silent --show-error --location --retry 1 "${@:2}" \
