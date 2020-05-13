@@ -256,7 +256,10 @@ jobs:
           fi
 
           echo "::set-env name=MERGED::$(echo ${MERGED_STAT})" 
-          echo "MERGE", $MERGED
+          echo "::set-env name=LABELED::$(echo ${LAB})" 
+          echo "MERGED", $MERGED
+          echo "LABELED", $LABELED
+          echo "LAB", $LAB
           echo "STAGE", $STAGE
 
       - name: Checkout repository
@@ -310,8 +313,9 @@ jobs:
           git tag $NEW_TAG $NEW_TAG^{} -f -m "$(printf "This is a $BV_PART release from $OLD_TAG → $NEW_TAG.\n\nChanges:\n$CHANGES_NEWLINE")"
           git tag -n99 -l $NEW_TAG
       - name: Comment on issue
-        if: >-
-          ${{ env.STAGE }} == "true"
+        # if: >-
+        #   ${{ env.STAGE }} == "true"
+        if: ${{ "$(STAGE)" == "true" }}
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
@@ -343,8 +347,9 @@ jobs:
                   -d '["GHA/STAGED"]')"
 
       - name: Push changes
-        if: >-
-          (${{ env.MERGE }} == "true")
+        # if: >-
+        #   (${{ env.MERGE }} == "true")
+        if: ${{ "$(MERGED)" == "true" }}
         # uses: ad-m/github-push-action@v0.5.0
         # with:
         #   branch: master
@@ -354,8 +359,9 @@ jobs:
           echo "X", ${{ env.MERGE }} 
 
       - name: Remove artifact
-        if: >-
-          ${{ env.MERGED }} == "true" 
+        # if: >-
+        #   ${{ env.MERGED }} == "true" 
+        if: ${{ "$(MERGED)" == "true" }}
         run: |
           crl() {
             curl --silent --show-error --location --retry 1 "${@:2}" \
