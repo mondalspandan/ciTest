@@ -239,7 +239,7 @@ jobs:
             echo "::set-env name=GITHUB_API::$(echo ${GITHUB_API})" 
 
           done
-      - name: Check and set triggers
+      - name: Fetch triggers and set env
         run: |
           export GITHUB_API="https://api.github.com/repos/$GITHUB_REPOSITORY"
           export PR_NUMBER=$(echo $JS | jq -r .PR_NUMBER)
@@ -266,8 +266,11 @@ jobs:
           echo "MERGED", $MERGED
           echo "LABEL", $LABEL
 
-          echo "ENV", env
-          echo "ENV2", ${{ toJson(env) }}
+      - name: Dump env 
+        env:
+          GHA_ENV: ${{ toJson(env) }}
+        run: |
+          echo "$GHA__ENV"
 
 
       - name: Checkout repository
