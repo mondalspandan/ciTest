@@ -66,12 +66,11 @@ jobs:
           #   "nyurik/openmaptiles/nyurik-patch-1/4953dd2370b9988a7832d090b5e47b3cd867f594": 6,
           #   ...
           # }
-          PULL_REQUESTS_RAW="$( crl "$GITHUB_API/pulls?sort=updated&direction=desc" )"
+          PULL_REQUESTS_RAW="$( crl "$GITHUB_API/pulls?state=all&sort=updated&direction=desc" )"
           if ! PULL_REQUESTS="$(jq --arg IGNORE_PRS_OLDER_THAN "$IGNORE_PRS_OLDER_THAN" '
               map(
                   # Only select unlocked pull requests updated within last $IGNORE_PRS_OLDER_THAN minutes
-                  select(.locked==false
-                         and (now - (.updated_at|fromdate)) / 60 < ($IGNORE_PRS_OLDER_THAN | tonumber))
+                  select((now - (.updated_at|fromdate)) / 60 < ($IGNORE_PRS_OLDER_THAN | tonumber))
                   # Prepare for "from_entries" by creating a key/value object
                   # The key is a combination of repository name, branch name, and latest SHA
                   | { key: (.head.repo.full_name + "/" + .head.ref + "/" + .head.sha), value: .number }
@@ -82,6 +81,8 @@ jobs:
               echo "$PULL_REQUESTS_RAW"
               exit 1
           fi
+          # echo "PRR", $PULL_REQUESTS_RAW
+          # echo "PR", $PULL_REQUESTS
           # Count how many pull requests we should process, and exit early if there are none
           PR_COUNT="$(jq 'length' <( echo "$PULL_REQUESTS" ) )"
           if [ "$PR_COUNT" -eq 0 ]; then
@@ -247,7 +248,7 @@ jobs:
           export PR_NUMBER=$(echo $JS | jq -r .PR_NUMBER)
           LABEL=$(curl -f "$GITHUB_API/issues/$PR_NUMBER/labels" \
                 -H "Content-Type: application/json" | jq '.[] | select(.name=="GHA/STAGED")' | jq -r '.name' )
-          MERGED_STAT=$(curl -f "$GITHUB_API/pulls/$PR_NUMBER" \
+          MERGED_FLAG=$(curl -f "$GITHUB_API/pulls/$PR_NUMBER" \
                    -H "Content-Type: application/json" | jq '.merged')
 
           if [ -z "$LABEL" ]; then
@@ -257,9 +258,9 @@ jobs:
             echo "Release has already been staged"
           fi
 
-          if [ "$MERGED" == true ]; then
+          if [ "$MERGED_FLAG" == true ]; then
             echo "PR has been merged"
-            echo "::set-env name=$MERGED::true"
+            echo "::set-env name=MERGED::true"
           else
             echo "PR has not been merged"
           fi
@@ -283,6 +284,7 @@ jobs:
       - name: Checkout master
         run: git checkout master
       - name: Squash and merge PR#${{ env.PR_NUMBER }} to master
+        if: env.STAGE
         run: |
           PR_TITLE=$(echo $JS | jq -r .PR_TITLE)
           PR_NUMBER=$(echo $JS | jq -r .PR_NUMBER)
