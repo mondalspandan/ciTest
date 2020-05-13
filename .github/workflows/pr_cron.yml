@@ -231,7 +231,6 @@ jobs:
               COMMENT_INFO="Existing comment $COMMENT_HTML_URL was updated"
             fi
             echo "$COMMENT_INFO from workflow $WORKFLOW_NAME #$RUN_ID on PR #$PR_NUMBER"
-            echo "XXX", "$MESSAGE"
             
             echo "::set-env name=JS::$(echo ${MESSAGE})" 
             echo "::set-env name=PR_TITLE::$(echo ${MESSAGE} | jq -r .PR_TITLE)" 
@@ -306,6 +305,7 @@ jobs:
           OLD_TAG=$(git describe --tags --abbrev=0)
           echo "::set-env name=OLD_TAG::${OLD_TAG}"
           echo "Run bumpversion"
+          echo "bumpversion $BV_PART --message Bump version: {current_version} → {new_version}"
           bumpversion $BV_PART --message "Bump version: {current_version} → {new_version}
           Triggered by #${PR_NUMBER} via GitHub Actions."
           echo "Successfully ran bumpversion"
@@ -364,11 +364,8 @@ jobs:
         with:
           branch: master
           github_token: ${{ secrets.PAT_TEST }}
-        # run: |
-        #   echo "This would have run"
-        #   echo "X", ${{ env.MERGE }} 
 
-      - name: Remove artifact
+      - name: Clean up
         if: env.MERGED
         run: |
           crl() {
@@ -381,9 +378,19 @@ jobs:
           }
 
           echo "Removing triggering artifact id: $ART_ID"
-          DEL="$(auth_crl "$GITHUB_API/actions/artifacts/$ART_ID" \
+          DEL_ART="$(auth_crl "$GITHUB_API/actions/artifacts/$ART_ID" \
                 -X DELETE \
                 -H "Content-Type: application/json" )" 
+
+          echo "Update labels"
+          ADD_RELEASED="$(auth_crl "$GITHUB_API/issues/$PR_NUMBER/labels" \
+                          -X POST \
+                          -H "Content-Type: application/json" \
+                          -d '["GHA/RELEASED"]')"
+
+          DEL_STAGED="$(auth_crl "$GITHUB_API/issues/$PR_NUMBER/labels/GHA/STAGED" \
+                        -X DELETE \
+                        -H "Content-Type: application/json" )"
       # - name: Comment that something failed
       #   if: failure()
       #   uses: actions/github-script@0.3.0
