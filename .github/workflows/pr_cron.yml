@@ -40,10 +40,7 @@ jobs:
           #  * match pull requests and their current SHA with the last workflow run for the same SHA
           #  * for each found match of  <pull-request-number>  and  <workflow-run-id> :
           #     * download artifact from the workflow run -- expects a single file with markdown content
-          #     * look through existing PR comments to see if we have posted a comment before
-          #       (uses a hidden magical header to identify our comment)
-          #     * either create or update the comment with the new text (if changed)
-          #
+          #     * use artifact as trigger if available
           export GITHUB_API="https://api.github.com/repos/$GITHUB_REPOSITORY"
           export COMMENT_MAGIC_HEADER='<!--'" Do not edit. This comment will be auto-updated with artifact '$MSG_ARTIFACT_NAME' created by action '$WORKFLOW_NAME' -->"
           # A useful wrapper around CURL
@@ -81,8 +78,6 @@ jobs:
               echo "$PULL_REQUESTS_RAW"
               exit 1
           fi
-          # echo "PRR", $PULL_REQUESTS_RAW
-          # echo "PR", $PULL_REQUESTS
           # Count how many pull requests we should process, and exit early if there are none
           PR_COUNT="$(jq 'length' <( echo "$PULL_REQUESTS" ) )"
           if [ "$PR_COUNT" -eq 0 ]; then
@@ -190,47 +185,6 @@ jobs:
               echo "Empty message in artifact '$MSG_ARTIFACT_NAME' in workflow $RUN_ID (PR #$PR_NUMBER), skipping..."
               continue
             fi
-            # Create a message body by appending a magic header
-            # and stripping any starting and ending whitespace from the original message
-            MESSAGE_BODY="$(jq -n \
-                --arg COMMENT_MAGIC_HEADER "$COMMENT_MAGIC_HEADER" \
-                --arg MESSAGE "$MESSAGE" \
-                '{ body: ($COMMENT_MAGIC_HEADER + "\n" + ($MESSAGE | sub( "^[\\s\\p{Cc}]+"; "" ) | sub( "[\\s\\p{Cc}]+$"; "" ))) }' \
-            )"
-            EXISTING_PR_COMMENTS="$(crl "$GITHUB_API/issues/$PR_NUMBER/comments")"
-            # Get the comment URL for the first comment that begins with the magic header, or empty string
-            OLD_COMMENT="$(jq --arg COMMENT_MAGIC_HEADER "$COMMENT_MAGIC_HEADER" '
-                map(select(.body | startswith($COMMENT_MAGIC_HEADER)))
-                | first
-                | select(.!=null)
-                ' <( echo "$EXISTING_PR_COMMENTS" ) )"
-            if [ -z "$OLD_COMMENT" ]; then
-              # COMMENT_HTML_URL="$(auth_crl "$GITHUB_API/issues/$PR_NUMBER/comments" \
-              #     -X POST \
-              #     -H "Content-Type: application/json" \
-              #     -d '{"body":":+1:"}' \
-              #   | jq -r '.html_url' )"
-              echo "URL", $COMMENT_HTML_URL
-              COMMENT_INFO="New comment $COMMENT_HTML_URL was created"
-            else
-              # Make sure the content of the message has changed
-              COMMENT_URL="$(jq -r '
-                  (input | .body) as $body
-                  | select(.body | . != $body)
-                  | .url
-                  ' <( echo "$OLD_COMMENT" ) <( echo "$MESSAGE_BODY" ) )"
-              if [ -z "$COMMENT_URL" ]; then
-                echo "The message has already been posted from artifact '$MSG_ARTIFACT_NAME' in workflow $RUN_ID (PR #$PR_NUMBER), skipping..."
-                continue
-              fi
-              COMMENT_HTML_URL="$(auth_crl "$COMMENT_URL" \
-                  -X PATCH \
-                  -H "Content-Type: application/json" \
-                  -d "$MESSAGE_BODY" \
-                | jq -r '.html_url' )"
-              COMMENT_INFO="Existing comment $COMMENT_HTML_URL was updated"
-            fi
-            echo "$COMMENT_INFO from workflow $WORKFLOW_NAME #$RUN_ID on PR #$PR_NUMBER"
             
             echo "::set-env name=JS::$(echo ${MESSAGE})" 
             echo "::set-env name=PR_TITLE::$(echo ${MESSAGE} | jq -r .PR_TITLE)" 
@@ -382,7 +336,7 @@ jobs:
           branch: master
           github_token: ${{ secrets.PAT_TEST }}
 
-      - name: Clean up
+      - name: Mark as released and clean up
         if: env.MERGED
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
@@ -410,26 +364,6 @@ jobs:
           DEL_STAGED="$(auth_crl "$GITHUB_API/issues/$PR_NUMBER/labels/GHA/STAGED" \
                         -X DELETE \
                         -H "Content-Type: application/json" )"
-
-      - name: Art
-        if: env.RELEASED
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        run: |
-          crl() {
-            curl --silent --show-error --location --retry 1 "${@:2}" \
-              -H "Accept: application/vnd.github.antiope-preview+json, application/vnd.github.v3+json" \
-             "$1"
-          }
-          auth_crl() {
-            crl "$1" -H "authorization: Bearer $GITHUB_TOKEN" "${@:2}"
-          }
-
-          echo "Removing triggering artifact id: $ART_ID"
-          DEL_ART="$(auth_crl "$GITHUB_API/actions/artifacts/$ART_ID" \
-                -X DELETE \
-                -H "Content-Type: application/json" )" 
-          echo $DEL_ART
 
       # - name: Comment that something failed
       #   if: failure()
