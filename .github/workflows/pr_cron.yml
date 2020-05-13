@@ -356,6 +356,15 @@ jobs:
         if: >-
           ${{ env.MERGED }} == "true" 
         run: |
+          crl() {
+            curl --silent --show-error --location --retry 1 "${@:2}" \
+              -H "Accept: application/vnd.github.antiope-preview+json, application/vnd.github.v3+json" \
+             "$1"
+          }
+          auth_crl() {
+            crl "$1" -H "authorization: Bearer $GITHUB_TOKEN" "${@:2}"
+          }
+          
           echo "Removing triggering artifact id: $ART_ID"
           DEL="$(auth_crl "$GITHUB_API/actions/artifacts/$ART_ID" \
                 -X DELETE \
