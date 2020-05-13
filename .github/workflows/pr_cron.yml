@@ -297,7 +297,7 @@ jobs:
         if: env.ART_ID  # Trigger artifact exists
         run: git checkout master
       - name: Squash and merge PR#${{ env.PR_NUMBER }} to master
-        if: env.STAGE
+        if: env.STAGE && env.ART_ID  # Trigger artifact exists
         run: |
           PR_TITLE=$(echo $JS | jq -r .PR_TITLE)
           PR_NUMBER=$(echo $JS | jq -r .PR_NUMBER)
