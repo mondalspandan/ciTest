@@ -239,6 +239,7 @@ jobs:
             # For trigger removing
             echo "::set-env name=ART_ID::$(echo ${ART_ID})" 
             echo "::set-env name=GITHUB_API::$(echo ${GITHUB_API})" 
+            echo "ARTID", $ART_ID
 
           done
       - name: Fetch triggers and set env
