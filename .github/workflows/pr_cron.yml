@@ -238,10 +238,6 @@ jobs:
             echo "::set-env name=ART_ID::$(echo ${ART_ID})" 
             echo "::set-env name=GITHUB_API::$(echo ${GITHUB_API})" 
 
-            # echo "Removing triggering artifact id: $ART_ID"
-            # DEL="$(auth_crl "$GITHUB_API/actions/artifacts/$ART_ID" \
-            #       -X DELETE \
-            #       -H "Content-Type: application/json" )" 
           done
       - name: Check what to run
         run: |
@@ -249,7 +245,7 @@ jobs:
           export PR_NUMBER=$(echo $JS | jq -r .PR_NUMBER)
           LAB=$(curl -f "$GITHUB_API/issues/$PR_NUMBER/labels" \
                 -H "Content-Type: application/json" | jq '.[] | select(.name=="GHA/STAGED")' | jq -r '.name' )
-          MERGED=$(curl -f "$GITHUB_API/pulls/$PR_NUMBER" \
+          MERGED_STAT=$(curl -f "$GITHUB_API/pulls/$PR_NUMBER" \
                    -H "Content-Type: application/json" | jq '.merged')
 
           if [ -z "$LAB" ]; then
@@ -258,8 +254,9 @@ jobs:
           else
             echo "Release has already been staged"
           fi
-          echo "MERGEG", $MERGED
-          echo "LABEL", $LAB
+
+          echo "::set-env name=MERGED::$(echo ${MERGED_STAT})" 
+          echo "MERGE", $MERGED
           echo "STAGE", $STAGE
 
       - name: Checkout repository
@@ -364,7 +361,7 @@ jobs:
           auth_crl() {
             crl "$1" -H "authorization: Bearer $GITHUB_TOKEN" "${@:2}"
           }
-          
+
           echo "Removing triggering artifact id: $ART_ID"
           DEL="$(auth_crl "$GITHUB_API/actions/artifacts/$ART_ID" \
                 -X DELETE \
