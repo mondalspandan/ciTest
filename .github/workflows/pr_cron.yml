@@ -258,7 +258,9 @@ jobs:
           else
             echo "Release has already been staged"
           fi
-          echo $MERGED, $LAB, $STAGE
+          echo "MERGEG", $MERGED
+          echo "LABEL", $LAB
+          echo "STAGE", $STAGE
 
       - name: Checkout repository
         uses: actions/checkout@v1.2.0
@@ -349,8 +351,8 @@ jobs:
         uses: ad-m/github-push-action@v0.5.0
         with:
           branch: master
-          github_token: ${{ secrets.GITHUB_PAT }}
-      - name: Push changes
+          github_token: ${{ secrets.PAT_TEST }}
+      - name: Remove artifact
         if: >-
           ${{ env.MERGED }} == "true" 
         run: |
