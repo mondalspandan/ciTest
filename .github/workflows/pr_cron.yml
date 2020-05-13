@@ -305,14 +305,17 @@ jobs:
           git merge --squash "PR${PR_NUMBER}"
           git commit -m "${PR_TITLE} (#${PR_NUMBER})"
       - name: Set up Python 3.7
+        if: env.ART_ID  # Trigger artifact exists
         uses: actions/setup-python@v1
         with:
           python-version: 3.7
       - name: Install bumpversion
+        if: env.ART_ID  # Trigger artifact exists
         run: |
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install bumpversion
       - name: Run bumpversion ${{ env.BV_PART }}
+        if: env.ART_ID  # Trigger artifact exists
         run: |
           PR_NUMBER=$(echo $JS | jq -r .PR_NUMBER)
           BV_PART=$(echo $JS | jq -r .BV_PART)
@@ -341,7 +344,7 @@ jobs:
           git tag $NEW_TAG $NEW_TAG^{} -f -m "$(printf "This is a $BV_PART release from $OLD_TAG → $NEW_TAG.\n\nChanges:\n$CHANGES_NEWLINE")"
           git tag -n99 -l $NEW_TAG
       - name: Comment on issue
-        if: env.STAGE
+        if: env.STAGE && env.ART_ID  # Trigger artifact exists
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
