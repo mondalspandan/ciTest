@@ -345,10 +345,14 @@ jobs:
       - name: Push changes
         if: >-
           ${{ env.MERGED }} == "true"
-        uses: ad-m/github-push-action@v0.5.0
-        with:
-          branch: master
-          github_token: ${{ secrets.PAT_TEST }}
+        # uses: ad-m/github-push-action@v0.5.0
+        # with:
+        #   branch: master
+        #   github_token: ${{ secrets.PAT_TEST }}
+        run: |
+          echo "This would have run"
+          echo "X", ${{ env.MERGED }} 
+
       - name: Remove artifact
         if: >-
           ${{ env.MERGED }} == "true" 
